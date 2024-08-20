@@ -1,18 +1,6 @@
 #include "typewise-alert.h"
 #include <stdio.h>
 
-// Define limits in a static array for better modularity
-typedef struct {
-    int lowerLimit;
-    int upperLimit;
-} CoolingLimits;
-
-static const CoolingLimits coolingLimits[] = {
-    {0, 35},  // PASSIVE_COOLING
-    {0, 45},  // HI_ACTIVE_COOLING
-    {0, 40}   // MED_ACTIVE_COOLING
-};
-
 BreachType inferBreach(double value, double lowerLimit, double upperLimit) {
     if (value < lowerLimit) {
         return TOO_LOW;
@@ -24,8 +12,16 @@ BreachType inferBreach(double value, double lowerLimit, double upperLimit) {
 }
 
 BreachType classifyTemperatureBreach(CoolingType coolingType, double temperatureInC) {
-    CoolingLimits limits = coolingLimits[coolingType];
-    return inferBreach(temperatureInC, limits.lowerLimit, limits.upperLimit);
+    static const struct {
+        int lowerLimit;
+        int upperLimit;
+    } coolingLimits[] = {
+        {0, 35},  // PASSIVE_COOLING
+        {0, 45},  // HI_ACTIVE_COOLING
+        {0, 40}   // MED_ACTIVE_COOLING
+    };
+    
+    return inferBreach(temperatureInC, coolingLimits[coolingType].lowerLimit, coolingLimits[coolingType].upperLimit);
 }
 
 void checkAndAlert(AlertTarget alertTarget, BatteryCharacter batteryChar, double temperatureInC) {
@@ -44,17 +40,18 @@ void sendToController(BreachType breachType) {
 }
 
 void sendToEmail(BreachType breachType) {
-    const char* recepient = "a.b@c.com";
-    printf("To: %s\n", recepient);
-    switch (breachType) {
-        case TOO_LOW:
-            printf("Hi, the temperature is too low\n");
-            break;
-        case TOO_HIGH:
-            printf("Hi, the temperature is too high\n");
-            break;
-        case NORMAL:
-            printf("Hi, the temperature is normal\n");
-            break;
+    const char* recipient = "a.b@c.com";
+    printf("To: %s\n", recipient);
+    
+    const char* emailMessage = NULL;
+
+    if (breachType == TOO_LOW) {
+        emailMessage = "the temperature is too low\n";
+    } else if (breachType == TOO_HIGH) {
+        emailMessage = "the temperature is too high\n";
+    } else {
+        emailMessage = "the temperature is normal\n";
     }
+    
+    printf("%s", emailMessage);
 }
